@@ -1,0 +1,198 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Bullet Dodge</title>
+        <script src="//cdn.jsdelivr.net/phaser/2.5.0/phaser.min.js"></script>
+    </head>
+    <body>
+
+    <script type="text/javascript">
+
+   var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'bullet-dodge', { preload: preload, create: create, update: update });
+
+function preload () {
+
+    game.load.image('player', 'runman.png');
+    game.load.image('bullet', 'gunbullet.png');
+    game.load.image('shield', 'shield.png');
+    game.load.image('shieldedPlayer','runmanshielded.png');
+}
+var player;
+var bullets;
+var shields;
+var text;
+var playing = true;
+var shielded = false;
+
+function create () {
+
+    game.world.setBounds(0,0,800,600);
+    game.stage.backgroundColor = 0x337799;
+
+
+    player = game.add.sprite(100, 300, 'player');
+    game.physics.enable(player, Phaser.Physics.ARCADE);
+    player.scale.setTo(0.05,0.05);
+    player.anchor.x = 0.5;
+    player.body.collideWorldBounds = true;
+    cursors = game.input.keyboard.createCursorKeys();
+    resetbutton = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+    
+    bullets = game.add.group();
+    bullets.enableBody = true;
+    bullets.physicsBodyType = Phaser.Physics.ARCADE;
+
+    shields = game.add.group();
+    shields.enableBody = true;
+    shields.physicsBodyType = Phaser.Physics.ARCADE;
+
+
+    for (var x = 0; x < 5; x++) {
+        addBullet();
+    }
+
+    text = game.add.text(game.world.centerX, 50, "- Score: 0 -", {
+        font: "30px Arial",
+        fill: "#ff0044",
+        align: "center"
+    });
+
+    text.anchor.setTo(0.5, 0.5);
+
+
+}
+
+function bulletOut(bullet) {
+    var random = Math.random() * (600);
+    bullet.reset(800,random);
+    bullet.body.velocity.x = -400 - Math.random()*250
+}
+
+function update () {
+
+    
+    game.physics.arcade.overlap(player, bullets, collisionHandler, null, this);
+    game.physics.arcade.overlap(player, shields, giveShield, null, this);
+
+    if (cursors.left.isDown)
+    {
+        player.x -= 4;
+        player.scale.x = -0.05;
+    }
+    else if (cursors.right.isDown)
+    {
+        player.x += 4;
+        player.scale.x = 0.05;
+    }
+
+    if (cursors.up.isDown)
+    {
+        player.y -= 4;
+    }
+    else if (cursors.down.isDown)
+    {
+        player.y += 4;
+    }
+    else if (resetbutton.isDown)
+    {
+        reset()
+    }
+    if (playing == true) {
+    text.setText("- Score:"+ Math.round(game.time.totalElapsedSeconds())+" -");
+    }
+    else if (playing == false) {
+        bullets.forEachAlive(deleteBullet, this);
+        shields.forEachAlive(deleteShield,this);
+    }
+    //console.log(bullets.countLiving() + "+" + Math.round(game.time.totalElapsedSeconds() 5 ));
+    if (Math.round(game.time.totalElapsedSeconds()) / 5 + 5 > bullets.countLiving() && playing == true) {
+        addBullet();
+    } 
+   
+
+
+   if (Math.round(game.time.totalElapsedSeconds()) % 15 == 0 && shields.countLiving() == 0 && playing == true) {
+        var random = Math.random() * (600);
+        var shield = shields.create(800,random,'shield');
+        shield.scale.setTo(0.02,0.02);
+        shield.checkWorldBounds = true;
+        shield.events.onOutOfBounds.add(deleteShield,this);
+        shield.body.velocity.x = -100;
+   }
+   if (shielded == true) {
+        shieldMan.x = player.x;
+        shieldMan.y = player.y;
+        shieldMan.scale.x = player.scale.x;
+        console.log("update attempt");
+    }
+
+   }
+
+   function addBullet() {
+        var random = Math.random() * (600);
+        var bullet = bullets.create(800,random,'bullet')
+        bullet.scale.setTo(0.1,0.1);
+        bullet.checkWorldBounds = true;
+        bullet.events.onOutOfBounds.add(bulletOut,this);
+        bullet.body.velocity.x = -50 - Math.random() * 250;
+   }
+    function collisionHandler(obj,bullet){
+    if (shielded == false) {
+    player.kill();
+    playing = false;
+    }
+    else {
+        bullet.kill();
+        shieldMan.kill();
+        shielded = false;
+    }
+
+}
+    function giveShield(obj,shield) {
+    if (shielded == false) {
+    shielded = true;
+    shields.forEachAlive(deleteShield,this);
+    shieldMan = game.add.sprite(player.x, player.y, 'shieldedPlayer');
+    game.physics.enable(shieldMan, Phaser.Physics.ARCADE);
+    shieldMan.scale.setTo(0.05,0.05);
+    shieldMan.anchor.x = 0.5;
+    console.log(shieldMan.x);
+    }
+    }
+
+    
+
+
+
+function reset() {
+    playing = true;
+    shields.forEachAlive(deleteShield,this);
+    bullets.forEachAlive(deleteBullet,this);
+    player.kill();
+    game.time.reset();
+    bullets.forEachAlive(bulletOut,this);
+    player = game.add.sprite(100, 300, 'player');
+    game.physics.enable(player, Phaser.Physics.ARCADE);
+    player.scale.setTo(0.05,0.05);
+    player.anchor.x = 0.5;
+    player.body.collideWorldBounds = true;
+    
+}
+function deleteShield(shield) {
+    shield.kill();
+}
+function deleteBullet(bullet) {
+    bullet.kill();
+}
+
+
+    </script>
+
+    </body>
+</html>
+
+
+
+
+
